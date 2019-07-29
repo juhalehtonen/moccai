@@ -11,13 +11,24 @@ import time
 from flask import Flask
 from flask_restful import Resource, Api
 
+# For string randomization
+import random, string
+
+def randomword(length):
+   letters = string.ascii_lowercase
+   return ''.join(random.choice(letters) for i in range(length))
+
 def take_photo():
     print("Taking photo..")
     # Open new stream
     vcap = cv2.VideoCapture(0)
 
     # Wait a bit so camera "is ready"
+    #time.sleep(2)
+    vcap.set(3,1280)
+    vcap.set(4,1024)
     time.sleep(2)
+    vcap.set(15, -8.0)
 
     # Get the image
     retval, image = vcap.read()
@@ -28,10 +39,13 @@ def take_photo():
     # Define jpeg quality
     params = [int(cv2.IMWRITE_JPEG_QUALITY), 100]
 
-    image = change_brightness(image, 1.15, 30)
+    # Brighten image
+    #image = change_brightness(image, 1.15, 30)
 
-    cv2.imwrite("orig.jpg", image, params)
+    file_path = "./photos/" + randomword(12) + ".jpg"
 
+    cv2.imwrite(file_path, image, params)
+    return file_path
     # Crop img
     #img = cv2.imread("orig.jpg")
     #crop_img = img[50:900, 30:800]
@@ -41,12 +55,12 @@ def take_photo():
 def change_brightness(img, alpha, beta):
     return cv2.addWeighted(img, alpha, np.zeros(img.shape, img.dtype),0, beta)
 
-def predict():
+def predict(img_path):
     # Load pretrained model
     learn = load_learner('.', 'trained_model.pkl')
     print("Running prediction..")
     # Load image
-    img = open_image('orig.jpg')
+    img = open_image(img_path)
     # Run prediction against image
     prediction_class, prediction_idx, outputs = learn.predict(img)
     # Print result and show source image
@@ -59,13 +73,15 @@ api = Api(app)
 
 class HelloWorld(Resource):
     def get(self):
-        take_photo()
-        prediction = predict()
+        img_path = take_photo()
+        #time.sleep(2)
+        prediction = predict(img_path)
         prediction_result = str(prediction[0])
         conf_no = float(prediction[1][0].item())
         conf_wtf = float(prediction[1][1].item())
         conf_yes = float(prediction[1][2].item())
         return {'coffee': prediction_result, 'confidence_yes': conf_yes, 'confidence_no': conf_no, 'confidence_wtf': conf_wtf}
+        #return {'coffee': prediction_result, 'prediction': str(prediction[1])}
 
 api.add_resource(HelloWorld, '/')
 
