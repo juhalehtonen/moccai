@@ -1,4 +1,4 @@
-# MoccaAI
+# MoccAI
 
 A simple machine learning demo to detect coffee in a Moccamaster brand coffee makers (which we just happen to have in our office at Evermade).
 
